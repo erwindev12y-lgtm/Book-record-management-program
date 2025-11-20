@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>จัดการคลังหนังสือ</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Mitr:wght@300;400;500;600&display=swap');
+    * { box-sizing: border-box; }
+
+    body {
+      font-family: "Mitr", sans-serif;
+      margin: 0;
+      background: #fafafa;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    header {
+      background: #a99ae3;
+      color: #fff;
+    }
+    .navbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 16px;
+      border-bottom: 2px solid #acaaaa;
+    }
+    .logo {
+      font-weight: 600;
+      font-size: 18px;
+    }
+    header ul {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    header a {
+      color: #fff;
+      text-decoration: none;
+      padding: 10px 14px;
+    }
+    header a:hover { background: #494c55; }
+
+    .search-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .search-bar input {
+      width: 300px;
+      height: 35px;
+      border-radius: 5px;
+      border: none;
+      padding: 0 10px;
+    }
+    .search-bar select {
+      height: 35px;
+      border-radius: 5px;
+      border: none;
+      padding: 0 8px;
+    }
+    #searchBox:focus {
+      outline: rgb(0, 162, 255) solid 2px;
+    }
+
+    .menu-toggle {
+      display: none;
+      font-size: 24px;
+      background: none;
+      border: none;
+      color: white;
+      cursor: pointer;
+    }
+
+    @media (max-width: 768px) {
+      .navbar { flex-wrap: wrap; }
+      .menu-toggle { display: block; }
+      #navMenu {
+        display: none;
+        width: 100%;
+        flex-direction: column;
+        background: #333;
+        padding: 10px 0;
+      }
+      #navMenu.active {
+        display: flex;
+        animation: slideDown 0.3s ease;
+      }
+      header li {
+        width: 100%;
+        justify-content: center;
+      }
+      .search-bar {
+        flex-direction: column;
+        width: 100%;
+        padding: 10px;
+      }
+      .search-bar input, .search-bar select { width: 90%; }
+      @keyframes slideDown {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+    }
+
+    main {
+      display: flex;
+      flex-direction: row;
+      flex-grow: 1;
+      gap: 10px;
+      padding: 10px;
+      overflow: hidden;
+    }
+    .container-left {
+      flex: 1;
+      background: #fff;
+      padding: 15px;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      overflow-y: auto;
+      min-width: 0;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 20px;
+    }
+    .card {
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      background: #fff;
+      padding: 5px;
+      text-align: center;
+      position: relative;
+      transition: transform .2s;
+    }
+    .card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+    }
+    .plus-card {
+      font-size: 48px;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      height: 290px;
+      background: #f8f8f8;
+      border: 2px dashed #bbb;
+    }
+    .plus-card:hover { background: #eee; }
+    .book-img {
+      width: 100%;
+      height: 220px;
+      object-fit: cover;
+      border-bottom: 1px solid #ddd;
+      margin-bottom: 5px;
+    }
+    .info {
+      padding: 5px;
+      font-size: 13px;
+      text-align: left;
+      height: 80px;
+      overflow: hidden;
+    }
+    .card-buttons {
+      position: absolute;
+      top: 5px;
+      right: 5px;
+      display: flex;
+      gap: 5px;
+    }
+    .edit-btn, .delete-btn {
+      padding: 2px 6px;
+      font-size: 13px;
+      border: 1px solid #aaa;
+      border-radius: 5px;
+      cursor: pointer;
+      background: #fff;
+    }
+    .badge {
+      position: absolute;
+      top: 5px;
+      left: 5px;
+      background: #333;
+      border: #888 solid 2px;
+      color: #fff;
+      font-size: 12px;
+      width: 20px;
+      height: 20px;
+      border-radius: 10%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+    }
+
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+    }
+    .modal.active { display: flex; }
+    .modal-content {
+      background: white;
+      padding: 25px;
+      border-radius: 12px;
+      width: 90%;
+      max-width: 480px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    }
+
+    input, button, textarea { font-family: inherit; }
+    input, textarea {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      margin-top: 5px;
+    }
+
+    .modal-buttons {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 20px;
+    }
+    .btn {
+      padding: 8px 14px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .btn.save { background: #0d6efd; color: #fff; }
+    .btn.cancel { background: #e5e5e5; }
+
+    .Shopee { background-color: orange; }
+    .eBay { background-color: green; }
+    .seed { background-color: red; }
+    .google { background-color: skyblue; }
+    #active { border-bottom: white solid 3px; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="navbar">
+      <div class="logo">📚 จัดการคลังหนังสือ</div>
+      <button class="menu-toggle" id="menuToggle">☰</button>
+      <ul id="navMenu">
+        <li><a href="/test.html"></a></li>
+        <li class="search-bar">
+          <input type="search" id="searchBox" placeholder="ค้นหาหนังสือ...">
+          <select id="searchSite">
+            <option class="Shopee" value="https://shopee.co.th/search?keyword=">Shopee</option>
+            <option class="seed" value="https://www.se-ed.com/Search/Product.aspx?keyword=">Se-ed</option>
+            <option class="google" value="https://www.google.com/search?q=">Google</option>
+            <option class="eBay" value="https://www.ebay.com/sch/i.html?_nkw=">eBay</option>
+          </select>
+        </li>
+      </ul>
+    </div>
+  </header>
+
+  <main>
+    <div class="container-left">
+      <div class="grid" id="grid">
+        <div class="card plus-card" id="addCard">+</div>
+      </div>
+    </div>
+  </main>
+
+  <div class="modal" id="modal">
+    <div class="modal-content">
+      <h3 id="modalTitle">เพิ่มหนังสือ</h3>
+      <form id="bookForm">
+        <label>เลือกรูปหนังสือ (ไฟล์หรือ URL)</label>
+        <input type="file" id="fileInput" accept="image/*">
+        <input type="text" id="imageInput" placeholder="หรือใส่ URL ของรูปภาพ">
+        <label>ชื่อหนังสือ</label>
+        <input type="text" id="titleInput" required placeholder="ชื่อเรื่อง, ผู้แต่ง">
+        <div class="row">
+          <div style="flex:1;">
+            <label>ราคา</label>
+            <input type="number" id="priceInput" placeholder="0.00">
+          </div>
+          <div style="flex:1;">
+            <label>จำนวนหน้าที่อ่านแล้ว</label>
+            <input type="number" id="pagesInput" placeholder="0">
+          </div>
+        </div>
+        <label>วันที่บันทึก</label>
+        <input type="date" id="dateInput">
+        <label>หมายเหตุ</label>
+        <textarea id="noteInput" placeholder="บันทึกข้อความเพิ่มเติม..." rows="3"></textarea>
+        <div class="modal-buttons">
+          <button type="button" class="btn cancel" id="cancelBtn">ยกเลิก</button>
+          <button type="submit" class="btn save">บันทึก</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+const addCard = document.getElementById('addCard');
+const modal = document.getElementById('modal');
+const cancelBtn = document.getElementById('cancelBtn');
+const bookForm = document.getElementById('bookForm');
+const grid = document.getElementById('grid');
+const modalTitle = document.getElementById('modalTitle');
+
+let books = JSON.parse(localStorage.getItem('books') || '[]');
+let editIndex = null;
+const saveBooks = () => localStorage.setItem('books', JSON.stringify(books));
+
+const notePopup = document.createElement('div');
+notePopup.innerHTML = `
+  <div id="noteOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);backdrop-filter:blur(3px);z-index:9998;"></div>
+  <div id="notePopup" style="
+      display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+      background:#fff;width:90%;max-width:400px;max-height:80vh;
+      overflow-y:auto;border-radius:12px;padding:0 16px 16px 16px;
+      box-shadow:0 4px 20px rgba(0,0,0,0.2);z-index:9999;
+      font-family:'Mitr',sans-serif;">
+
+      <div style="display:flex;justify-content:space-between;align-items:center;
+            position:sticky;top:0;background:#fff;padding-top:8px;margin-bottom:8px;">
+        <h3 style="margin:0;font-size:18px;">หมายเหตุ</h3>
+        <button id="closeNote" style="background:none;border:none;font-size:20px;cursor:pointer;">✖</button>
+      </div>
+      <div id="noteContent" style="white-space:pre-wrap;font-size:15px;line-height:1.5;color:#333;"></div>
+  </div>`;
+document.body.appendChild(notePopup);
+
+const showNote = (note) => {
+  document.getElementById('noteContent').textContent = note || 'ไม่มีหมายเหตุสำหรับหนังสือเล่มนี้';
+  document.getElementById('noteOverlay').style.display = 'block';
+  document.getElementById('notePopup').style.display = 'block';
+};
+const hideNote = () => {
+  document.getElementById('noteOverlay').style.display = 'none';
+  document.getElementById('notePopup').style.display = 'none';
+};
+document.getElementById('closeNote').addEventListener('click', hideNote);
+document.getElementById('noteOverlay').addEventListener('click', hideNote);
+
+const renderBooks = () => {
+  grid.innerHTML = '';
+  const plusCard = document.createElement('div');
+  plusCard.className = 'card plus-card';
+  plusCard.textContent = '+';
+  plusCard.addEventListener('click', () => {
+    modal.classList.add('active');
+    modalTitle.textContent = 'เพิ่มหนังสือ';
+    editIndex = null;
+    bookForm.reset();
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('dateInput').value = today;
+  });
+  grid.appendChild(plusCard);
+
+  books.forEach((book, i) => {
+    const card = document.createElement('div');
+    card.className = 'card book-card';
+    const badgeNumber = books.length - i;
+    card.innerHTML = `
+      <div class="badge">${badgeNumber}</div>
+      <div class="card-buttons">
+        <button class="edit-btn" data-index="${i}">แก้ไข</button>
+        <button class="delete-btn" data-index="${i}">ลบ</button>
+      </div>
+      ${book.image ? `<img class="book-img" src="${book.image}">` :
+      `<div class="book-img" style="display:flex;align-items:center;justify-content:center;color:#777;background:#eee;">ไม่มีรูป</div>`}
+      <div class="info">
+        <strong>${book.title}</strong><br>
+        ราคา: ${book.price || '-'} บาท<br>
+        อ่านแล้ว: ${book.pages || 0} หน้า<br>
+        วันที่: ${book.date || '-'}
+      </div>`;
+    grid.appendChild(card);
+
+    card.addEventListener('click', e => {
+      if (e.target.classList.contains('edit-btn') || e.target.classList.contains('delete-btn')) return;
+      showNote(book.note);
+    });
+  });
+
+  document.querySelectorAll('.delete-btn').forEach(btn => {
+    btn.addEventListener('click', e => {
+      const index = e.target.dataset.index;
+      if (confirm('ต้องการลบรายการนี้หรือไม่?')) {
+        books.splice(index, 1);
+        saveBooks();
+        renderBooks();
+      }
+    });
+  });
+
+  document.querySelectorAll('.edit-btn').forEach(btn => {
+    btn.addEventListener('click', e => {
+      editIndex = e.target.dataset.index;
+      const book = books[editIndex];
+      modal.classList.add('active');
+      modalTitle.textContent = 'แก้ไขหนังสือ';
+      document.getElementById('titleInput').value = book.title;
+      document.getElementById('priceInput').value = book.price;
+      document.getElementById('pagesInput').value = book.pages;
+      document.getElementById('dateInput').value = book.date;
+      document.getElementById('imageInput').value = book.image || '';
+      document.getElementById('noteInput').value = book.note || '';
+    });
+  });
+};
+
+addCard.addEventListener('click', () => {
+  modal.classList.add('active');
+  modalTitle.textContent = 'เพิ่มหนังสือ';
+  editIndex = null;
+  bookForm.reset();
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('dateInput').value = today;
+});
+cancelBtn.addEventListener('click', () => {
+  modal.classList.remove('active');
+  bookForm.reset();
+  editIndex = null;
+});
+
+bookForm.addEventListener('submit', e => {
+  e.preventDefault();
+  const title = document.getElementById('titleInput').value.trim();
+  const price = document.getElementById('priceInput').value;
+  const pages = document.getElementById('pagesInput').value;
+  const date = document.getElementById('dateInput').value;
+  const note = document.getElementById('noteInput').value.trim();
+  const file = document.getElementById('fileInput').files[0];
+  const imageURL = document.getElementById('imageInput').value.trim();
+
+  if (!title) return alert('กรุณากรอกชื่อหนังสือ');
+
+  const saveBook = (image) => {
+    const newBook = { title, price, pages, date, image, note };
+    if (editIndex !== null) books[editIndex] = newBook;
+    else books.unshift(newBook);
+    saveBooks();
+    renderBooks();
+    modal.classList.remove('active');
+    bookForm.reset();
+    editIndex = null;
+  };
+
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = () => saveBook(reader.result);
+    reader.readAsDataURL(file);
+  } else if (imageURL) saveBook(imageURL);
+  else saveBook(null);
+});
+
+renderBooks();
+
+const searchBox = document.getElementById('searchBox');
+const searchSite = document.getElementById('searchSite');
+searchBox.addEventListener('keydown', e => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    const query = encodeURIComponent(searchBox.value.trim());
+    const base = searchSite.value;
+    if (query) window.open(base + query, '_blank');
+    searchBox.value = '';
+  }
+});
+document.getElementById("menuToggle").addEventListener("click", () => {
+  document.getElementById("navMenu").classList.toggle("active");
+});
+  </script>
+</body>
+</html>
